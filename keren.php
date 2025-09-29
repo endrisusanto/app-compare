@@ -95,7 +95,6 @@ unset($_SESSION['results'], $_SESSION['db_message'], $_SESSION['error']);
 </head>
 <body class="font-sans">
         <canvas id="animated-bg" class="fixed top-0 left-0 w-full h-full -z-10"></canvas>
-
     <script src="https://cdn.jsdelivr.net/npm/simple-datatables@latest/dist/umd/simple-datatables.js" type="text/javascript"></script>
     <script>
     document.addEventListener('DOMContentLoaded', () => {

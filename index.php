@@ -37,17 +37,30 @@ if (isset($_POST['action']) && $_POST['action'] === 'compare') {
         $base_data = parsePastedData($base_text);
         $comparison_data = parsePastedData($comparison_text);
         
+        // Langkah 1: Buat map berisi versi TERBARU untuk setiap model di data BASE
         $base_map = [];
         foreach ($base_data as $row) {
             $key = $row['model_name'] . '_' . $row['customer'];
-            $base_map[$key] = $row;
+            if (!isset($base_map[$key]) || version_compare($row['ap_version'], $base_map[$key]['ap_version'], '>')) {
+                $base_map[$key] = $row;
+            }
         }
+
+        // --- BLOK YANG DIPERBAIKI ---
+        // Langkah 2: Buat map berisi versi TERBARU untuk setiap model di data PEMBANDING (OLE/OLP)
+        $comparison_map = [];
+        foreach ($comparison_data as $row) {
+            $key = $row['model_name'];
+            if (!isset($comparison_map[$key]) || version_compare($row['ap_version'], $comparison_map[$key]['ap_version'], '>')) {
+                $comparison_map[$key] = $row;
+            }
+        }
+        // --- AKHIR BLOK YANG DIPERBAIKI ---
 
         $current_run_results = [];
 
-        foreach ($comparison_data as $comp_row) {
-            $model_name = $comp_row['model_name'];
-
+        // Langkah 3: Bandingkan versi TERBARU dari BASE dengan versi TERBARU dari PEMBANDING
+        foreach ($comparison_map as $model_name => $comp_row) {
             if (isset($reference_map[$model_name])) {
                 $target_customer = $reference_map[$model_name];
                 $lookup_key = $model_name . '_' . $target_customer;
@@ -55,15 +68,16 @@ if (isset($_POST['action']) && $_POST['action'] === 'compare') {
                 if (isset($base_map[$lookup_key])) {
                     $base_row = $base_map[$lookup_key];
 
-                    if ($base_row['ap_version'] > $comp_row['ap_version']) {
+                    // Lakukan perbandingan antara versi terbaru vs terbaru
+                    if (version_compare($base_row['ap_version'], $comp_row['ap_version'], '>')) {
                         $result_row = [
                             'model_name'      => $model_name,
                             'customer_base'   => $base_row['customer'],
                             'new_ap'          => $base_row['ap_version'],
-                            'old_ap'          => $comp_row['ap_version'],
+                            'old_ap'          => $comp_row['ap_version'], // Ini sekarang adalah versi terbaru dari PEMBANDING
                             'cp'              => $base_row['cp_version'],
                             'csc'             => $base_row['csc_version'],
-                            'full_row_string' => $base_row['full_row_string'] // Ini penting
+                            'full_row_string' => $base_row['full_row_string']
                         ];
                         $current_run_results[$model_name] = $result_row;
                     }
@@ -97,7 +111,6 @@ if (!empty($_SESSION['comparison_results'])) {
     }
 }
 
-
 $page_title = "Alat Perbandingan Versi Software";
 require 'header.php'; 
 ?>
@@ -117,7 +130,7 @@ require 'header.php';
         <form action="index.php" method="post" class="space-y-6">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                    <label for="base_data" class="block font-semibold mb-2 text-slate-600 dark:text-slate-300">Tabel BASE (Referensi: OXM, OLM, OXT)</label>
+                    <label for="base_data" class="block font-semibold mb-2 text-slate-600 dark:text-slate-300">Tabel BASE (Referensi: OXM, OLM, OXT, OLO)</label>
                     <textarea name="base_data" id="base_data" rows="12" class="w-full p-3 bg-white/50 dark:bg-slate-800/50 border border-slate-300 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition-all text-xs font-mono" placeholder="Salin dan tempel data dari Excel di sini..."></textarea>
                 </div>
                 <div>
@@ -134,7 +147,7 @@ require 'header.php';
         <?php if (!empty($_SESSION['comparison_results'])): ?>
         <div class="mt-12">
             <div class="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4">
-                <h2 class="text-2xl font-bold border-l-4 border-sky-500 pl-4">Hasil Perbandingan</h2>
+                <h2 class="text-2xl font-bold border-l-4 border-sky-500 pl-4">List Releasan Baru</h2>
                 <div class="flex items-center gap-2">
                     <?php if(!empty(trim($newly_added_clipboard_content))): ?>
                     <button type="button" id="copyNewBtn" class="px-5 py-2 text-sm font-medium text-white bg-green-500 hover:bg-green-600 rounded-full shadow-lg shadow-green-500/30 transition-all">Salin Hasil Baru</button>
@@ -148,7 +161,7 @@ require 'header.php';
                     <thead class="bg-slate-100/50 dark:bg-slate-800/50 text-xs uppercase">
                         <tr>
                             <th class="px-4 py-3">Model & Customer</th>
-                            <th class="px-4 py-3">Versi AP (Baru vs Lama)</th>
+                            <th class="px-4 py-3">Versi AP (Base vs XID)</th>
                             <th class="px-4 py-3">Detail Lain</th>
                             <th class="px-4 py-3 text-center">Aksi</th>
                         </tr>
@@ -205,15 +218,13 @@ require 'header.php';
 <script>
 document.addEventListener('DOMContentLoaded', () => {
     
-    // Fungsi generik untuk menangani klik tombol salin
     const handleCopyClick = (button, textToCopy) => {
-        if (!textToCopy) return; // Jangan lakukan apa-apa jika tidak ada teks
+        if (!textToCopy) return;
 
         navigator.clipboard.writeText(textToCopy).then(() => {
             const originalContent = button.innerHTML;
             const originalClasses = button.className;
             
-            // Ubah tampilan tombol menjadi "Tersalin"
             if (button.id === 'copyNewBtn' || button.id === 'copyAllBtn') {
                  button.textContent = 'Tersalin!';
                  button.classList.remove('bg-green-500', 'hover:bg-green-600', 'bg-sky-200/50', 'dark:bg-sky-800/50');
@@ -222,7 +233,6 @@ document.addEventListener('DOMContentLoaded', () => {
                  button.innerHTML = `<svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>`;
             }
 
-            // Kembalikan ke tampilan semula setelah 1.5 detik
             setTimeout(() => {
                 button.innerHTML = originalContent;
                 button.className = originalClasses;
@@ -233,7 +243,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
-    // Event listener untuk "Salin Hasil Baru"
     const copyNewBtn = document.getElementById('copyNewBtn');
     if (copyNewBtn) {
         copyNewBtn.addEventListener('click', () => {
@@ -242,7 +251,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Event listener untuk "Salin Semua"
     const copyAllBtn = document.getElementById('copyAllBtn');
     if(copyAllBtn) {
         copyAllBtn.addEventListener('click', () => {
@@ -251,7 +259,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Event listener untuk tombol salin per baris
     document.querySelectorAll('.copy-row-btn').forEach(button => {
         button.addEventListener('click', () => {
             const text = button.dataset.clipboardText;
