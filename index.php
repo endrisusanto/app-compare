@@ -107,7 +107,7 @@ require 'header.php';
         
         <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
             <h1 class="text-3xl md:text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-sky-400 to-violet-500">
-                Alat Perbandingan Versi
+                Alat Bantu Filter Daily Releases
             </h1>
             <a href="references.php" class="font-semibold text-sky-500 dark:text-sky-400 hover:text-sky-600 dark:hover:text-sky-300 transition-colors">
                 Kelola Tabel Referensi →
@@ -117,7 +117,7 @@ require 'header.php';
         <form action="index.php" method="post" class="space-y-6">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                    <label for="base_data" class="block font-semibold mb-2 text-slate-600 dark:text-slate-300">Tabel BASE (Referensi: OXM, OLM)</label>
+                    <label for="base_data" class="block font-semibold mb-2 text-slate-600 dark:text-slate-300">Tabel BASE (Referensi: OXM, OLM, OXT)</label>
                     <textarea name="base_data" id="base_data" rows="12" class="w-full p-3 bg-white/50 dark:bg-slate-800/50 border border-slate-300 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition-all text-xs font-mono" placeholder="Salin dan tempel data dari Excel di sini..."></textarea>
                 </div>
                 <div>
