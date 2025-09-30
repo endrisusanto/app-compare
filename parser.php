@@ -36,7 +36,7 @@ function parsePastedData($pastedText) {
 
     $data = [];
     foreach ($lines as $line) {
-        if (trim($line) === '') continue;
+        if (trim($line) === '') continue; // Lewati baris kosong
         
         $row = str_getcsv($line, "\t");
         
@@ -53,7 +53,7 @@ function parsePastedData($pastedText) {
                 'ap_version'      => trim($row[$col_indices['AP(Code) ver.']]),
                 'cp_version'      => $cp_version,
                 'csc_version'     => $csc_version,
-                'full_row_string' => $line // Simpan baris original untuk clipboard
+                'full_row_string' => $line // Simpan baris original
             ];
             
             // Hanya tambahkan jika model_name dan ap_version tidak kosong
